@@ -72,11 +72,11 @@ var expect;
     return this;
   };
   function toThrowA(actual, expected, message){
-    toBeAnInstanceOf(captureError(actual), expected, message);
+    toBeA(captureError(actual), expected, message);
     return this;
   };
   function toNotThrowA(actual, expected, message){
-    toNotBeAnInstanceOf(captureError(actual), expected, message);
+    toNotBeA(captureError(actual), expected, message);
     return this;
   };
   function toHaveProperty(actual, expected, message){
