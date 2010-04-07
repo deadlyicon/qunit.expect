@@ -47,11 +47,21 @@ var expect;
     };
   });
 
+  function emptyFunction(){}
+  function instanceOf(object, func){
+    if (typeof func !== 'function'){
+      console.warn(func, typeof func);
+      emptyFunction.prototype = func;
+      return object instanceof emptyFunction;
+    }
+    return object instanceof func;
+  }
+
   function toBeA(actual, expected, message){
     if (typeof expected === 'string'){
       ok(typeof actual === expected, message);
     }else{
-      ok(actual instanceof expected, message);
+      ok(instanceOf(actual, expected), message);
     }
     return this;
   };
@@ -59,7 +69,7 @@ var expect;
     if (typeof expected === 'string'){
       ok(typeof actual !== expected, message);
     }else{
-      ok(!(actual instanceof expected), message);
+      ok(!instanceOf(actual, expected), message);
     }
     return this;
   };
