@@ -20,7 +20,7 @@ var expect;
     ['to equal',                 'toEqual',              equals              ],
     ['to not equal',             'toNotEqual',           notEqual            ],
     ['to be',                    'toBe',                 strictEqual         ],
-    ['to no be',                 'toNotBe',              notStrictEqual      ],
+    ['to not be',                'toNotBe',              notStrictEqual      ],
     ['to be an instance of',     'toBeA',                toBeA               ],
     ['to not be an instance of', 'toNotBeA',             toNotBeA            ],
     ['to be an instance of',     'toBeAnInstanceOf',     toBeA               ],
