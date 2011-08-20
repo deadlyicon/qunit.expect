@@ -1,113 +1,156 @@
-var expect;
-;(function() {
-
-  expect = function expect(object){
-    return new Expect(arguments);
-  };
-  expect.prototype = Expect.prototype;
+!function(global) {
 
   function Expect(objects){
     this.objects = Array.prototype.slice.apply(objects);
+    // if (this.objects.length === 0) throw new Error('expect needs and object');
   };
+
+  Expect.prototype.assertors = {
+    toEqual: equals,
+    toNotEqual: notEqual,
+    toBe: strictEqual,
+    toNotBe: notStrictEqual,
+    toBeA: function(actual, expected, message){
+      ok(toBeA(actual, expected), message);
+    },
+    toNotBeA: function(actual, expected, message){
+      ok(!toBeA(actual, expected), message);
+    },
+    toBeAnInstanceOf: function(actual, expected, message){
+      ok(instanceOf(actual, expected), message);
+    },
+    toNotBeAnInstanceOf: function(actual, expected, message){
+      ok(!instanceOf(actual, expected), message);
+    },
+    toDeepEqual: deepEqual,
+    toNotDeepEqual: notDeepEqual,
+    toThrowAnError: function(actual, expected, message){
+      ok(typeof captureError(actual) !== 'undefined');
+    },
+    toNotThrowAnError: function(actual, expected, message){
+      ok(typeof captureError(actual) === 'undefined');
+    },
+    toThrow: function(actual, expected, message){
+      equals.call(null, captureErrorMessage(actual), expected, message);
+    },
+    toNotThrow: function(actual, expected, message){
+      notEqual.call(null, captureErrorMessage(actual), expected, message);
+    },
+    toThrowAnInstanceOf: function(actual, expected, message){
+      this.toBeAnInstanceOf(captureError(actual), expected, message);
+    },
+    toNotThrowAnInstanceOf: function(actual, expected, message){
+      this.toNotBeAnInstanceOf(captureError(actual), expected, message);
+    },
+    toThrowA: function(actual, expected, message){
+      this.toBeA(captureError(actual), expected, message);
+    },
+    toNotThrowA: function(actual, expected, message){
+      this.toNotBeA(captureError(actual), expected, message);
+    },
+    toHaveProperty: function(actual, expected, message){
+      ok(expected in actual, message);
+    },
+    toNotHaveProperty: function(actual, expected, message){
+      ok(!(expected in actual), message);
+    }
+  };
+  
+  function toBeA(actual, expected){
+    if (typeof expected !== 'string') throw toString(expected)+' must be a string';
+    return typeof actual === expected
+  }
+
   Expect.prototype.each = function(block){
     var self = this;
     self.objects.forEach(function(object){ block.call(self, object); });
     return self;
   };
 
+  function expect(/* objects */){
+    return new Expect(arguments);
+  };
+  global.expect = expect;
+  expect.prototype = Expect.prototype;
 
-  [
-    ['to equal',                 'toEqual',              equals              ],
-    ['to not equal',             'toNotEqual',           notEqual            ],
-    ['to be',                    'toBe',                 strictEqual         ],
-    ['to not be',                'toNotBe',              notStrictEqual      ],
-    ['to be an instance of',     'toBeA',                toBeA               ],
-    ['to not be an instance of', 'toNotBeA',             toNotBeA            ],
-    ['to be an instance of',     'toBeAnInstanceOf',     toBeA               ],
-    ['to not be an instance of', 'toNotBeAnInstanceOf',  toNotBeA            ],
-    ['to deep equal',            'toDeepEqual',          deepEqual           ],
-    ['to not deep equal',        'toNotDeepEqual',       notDeepEqual        ],
-    ['to throw',                 'toThrow',              toThrow             ],
-    ['to not throw',             'toNotThrow',           toNotThrow          ],
-    ['to throw a',               'toThrowA',             toThrowA            ],
-    ['to Not throw a',           'toNotThrowA',          toNotThrowA         ],
-    ['to have property',         'toHaveProperty',       toHaveProperty      ],
-    ['to not have property',     'toNotHaveProperty',    toNotHaveProperty   ]
-  ].forEach(function(data){
-    Expect.prototype[data[1]] = function(expected, message){
+  expect.addAssertor = function(name, fn, human_name){
+    Expect.prototype.assertors[name] = fn;
+    human_name || (human_name = humanize(name));
+    Expect.prototype[name] = function(expected, message){
+      var assertors = this.assertors;
       return this.each(function(actual){
-        var expected_as_string = QUnit.jsDump.parse(expected),
-            actual_as_string   = typeof actual === 'function' ?
-              '`'+actual.toString().split("\n").slice(1,-1).join("\n").replace(/\n/g, ' ')+'`' :
-              QUnit.jsDump.parse(actual);
-
-        message = message ? message : '(expected: '+actual_as_string+' '+data[0]+' '+expected_as_string;
-        data[2](actual, expected, message);
+        message || (message = generateMessage(actual, human_name, expected));
+        assertors[name](actual, expected, message);
       });
     };
+    return this;
+  };
+
+  forEachKey(Expect.prototype.assertors, function(name, fn){
+    expect.addAssertor(name, fn);
+    if (name.match(/A$/)) expect.addAssertor(name+'n', fn);
   });
+
+  function generateMessage(actual, expectation, expected){
+    return ''+
+      'Expected: '+toString(actual)+' '+expectation+' '+toString(expected)+' '+
+      'Source: '+sourceFromStacktrace();
+  }
+
+  function humanize(string){
+    return string.replace(/[A-Z]/g, function(chr) {
+      // print(typeof arguments[0]);
+      return chr ? ' '+chr.toLowerCase() : '';
+    });
+  }
+
+  function toString(object){
+    return typeof object === 'function' ? object.toString() : QUnit.jsDump.parse(object);
+  }
 
   function emptyFunction(){}
   function instanceOf(object, func){
     if (typeof func !== 'function'){
-      console.warn(func, typeof func);
       emptyFunction.prototype = func;
       return object instanceof emptyFunction;
     }
     return object instanceof func;
   }
 
-  function toBeA(actual, expected, message){
-    if (typeof expected === 'string'){
-      ok(typeof actual === expected, message);
-    }else{
-      ok(instanceOf(actual, expected), message);
-    }
-    return this;
-  };
-  function toNotBeA(actual, expected, message){
-    if (typeof expected === 'string'){
-      ok(typeof actual !== expected, message);
-    }else{
-      ok(!instanceOf(actual, expected), message);
-    }
-    return this;
-  };
-  function toThrow(actual, expected, message){
-    equals.apply(null, captureErrorMessage(actual, expected, message));
-    return this;
-  };
-  function toNotThrow(actual, expected, message){
-    notEqual.apply(null, captureErrorMessage(actual, expected, message));
-    return this;
-  };
-  function toThrowA(actual, expected, message){
-    toBeA(captureError(actual), expected, message);
-    return this;
-  };
-  function toNotThrowA(actual, expected, message){
-    toNotBeA(captureError(actual), expected, message);
-    return this;
-  };
-  function toHaveProperty(actual, expected, message){
-    ok(expected in actual, message);
-    return this;
-  }
-  function toNotHaveProperty(actual, expected, message){
-    ok(!(expected in actual), message);
-    return this;
-  }
-
-
   function captureError(actual){
-    if (typeof actual !== "function") throw new Error('functions only fool!');
+    if (typeof actual !== "function") throw new Error('actual is not a function');
     try{ actual(); }catch(e){ return e; }
-  }
-  function captureErrorMessage(actual, expected, message){
-    var error = captureError(actual);
-    if (error    && error.message   ) error    = error.message;
-    if (expected && expected.message) expected = expected.message;
-    return [error, expected, message];
+    return;
   }
 
-})();
+  function captureErrorMessage(actual){
+    var error = captureError(actual);
+    return error ? error.message ? error.message : error : '';
+  }
+
+  // so far supports only Firefox, Chrome and Opera (buggy)
+  // could be extended in the future to use something like https://github.com/csnover/TraceKit
+  function sourceFromStacktrace() {
+    try {
+      throw new Error();
+    } catch ( e ) {
+      if (e.stacktrace) {
+        // Opera
+        return e.stacktrace.split("\n")[6];
+      } else if (e.stack) {
+        // Firefox, Chrome
+        // return e.stack;
+        return e.stack.split("\n")[8];
+      } else if (e.sourceURL) {
+        // Safari, PhantomJS
+        // TODO sourceURL points at the 'throw new Error' line above, useless
+        //return e.sourceURL + ":" + e.line;
+      }
+    }
+  }
+  
+  function forEachKey(object, fn){
+    for (key in object) fn(key, object[key]);
+  }
+
+}(this);
