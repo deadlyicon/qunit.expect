@@ -1,38 +1,94 @@
 !function(){
 
+  function expectToFail(fn){
+    fn();
+    ok(!QUnit.config.current.assertions.pop().result, 'Expected to fail: '+fn);
+  }
+
+  test('expectToFail', function(){
+    ok(true, 'a');
+    expectToFail(function(){ ok(false, 'd'); });
+  });
+
+
   test('expect', 1, function(){
     equals(typeof expect, 'function');
   });
 
-  test('toEqual', 4, function(){
-    expect(1  ).toEqual(1);
-    expect(1  ).toEqual('1');
-    expect('1').toEqual(1);
-    expect('1').toEqual('1');
+  test('toEqual', 6, function(){
+    expect(1    ).toEqual(1);
+    expect(1    ).toEqual('1');
+    expect(false).toEqual('');
+
+    expectToFail(function(){ expect(1    ).toNotEqual(1);   });
+    expectToFail(function(){ expect(1    ).toNotEqual('1'); });
+    expectToFail(function(){ expect(false).toNotEqual('');  });
   });
 
-  test('toNotEqual', 4, function(){
+  test('toNotEqual', 8, function(){
     expect(2  ).toNotEqual(1);
     expect(2  ).toNotEqual('1');
     expect('2').toNotEqual(1);
     expect('2').toNotEqual('1');
+
+    expectToFail(function(){ expect(1  ).toNotEqual(1);   });
+    expectToFail(function(){ expect(1  ).toNotEqual('1'); });
+    expectToFail(function(){ expect('1').toNotEqual(1);   });
+    expectToFail(function(){ expect('1').toNotEqual('1'); });
   });
 
-  test('toBe', 2, function(){
-    expect(1).toBe(1);
-    expect(window).toBe(window);
+  test('toBe', 14, function(){
+    expect(undefined       ).toBe(undefined);
+    expect(1               ).toBe(1);
+    expect(''              ).toBe('');
+    expect(Array           ).toBe(Array);
+    expect(window          ).toBe(window);
+    expect(expect          ).toBe(expect);
+    expect(expect.prototype).toBe(expect.prototype);
+
+    expectToFail(function(){ expect(undefined       ).toNotBe(undefined);        });
+    expectToFail(function(){ expect(1               ).toNotBe(1);                });
+    expectToFail(function(){ expect(''              ).toNotBe('');               });
+    expectToFail(function(){ expect(Array           ).toNotBe(Array);            });
+    expectToFail(function(){ expect(window          ).toNotBe(window);           });
+    expectToFail(function(){ expect(expect          ).toNotBe(expect);           });
+    expectToFail(function(){ expect(expect.prototype).toNotBe(expect.prototype); });
   });
 
-  test('toNotBe', 1, function(){
-    expect({}).toNotBe({});
+  test('toNotBe', 18, function(){
+    expect(undefined).toNotBe({});
+    expect(undefined).toNotBe('');
+    expect(1        ).toNotBe('1');
+    expect(''       ).toNotBe('z');
+    expect({}       ).toNotBe({});
+    expect([]       ).toNotBe([]);
+    expect(Array    ).toNotBe(String);
+    expect(window   ).toNotBe(false);
+    expect(expect   ).toNotBe(function(){});
+
+    expectToFail(function(){ expect(undefined).toBe({});            });
+    expectToFail(function(){ expect(undefined).toBe('');            });
+    expectToFail(function(){ expect(1        ).toBe('1');           });
+    expectToFail(function(){ expect(''       ).toBe('z');           });
+    expectToFail(function(){ expect({}       ).toBe({});            });
+    expectToFail(function(){ expect([]       ).toBe([]);            });
+    expectToFail(function(){ expect(Array    ).toBe(String);        });
+    expectToFail(function(){ expect(window   ).toBe(false);         });
+    expectToFail(function(){ expect(expect   ).toBe(function(){});  });
   });
 
-  test('toBeA', 5, function(){
+  test('toBeA', 10, function(){
     expect(undefined   ).toBeA('undefined');
     expect({}          ).toBeAn('object');
     expect('hello'     ).toBeA('string');
     expect(1           ).toBeA('number');
     expect(function(){}).toBeA('function');
+
+    expectToFail(function(){ expect(undefined   ).toNotBeA('undefined'); });
+    expectToFail(function(){ expect({}          ).toNotBeAn('object');   });
+    expectToFail(function(){ expect('hello'     ).toNotBeA('string');    });
+    expectToFail(function(){ expect(1           ).toNotBeA('number');    });
+    expectToFail(function(){ expect(function(){}).toNotBeA('function');  });
   });
 
   test('toNotBeA', 6, function(){
